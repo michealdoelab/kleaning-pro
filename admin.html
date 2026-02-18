@@ -167,8 +167,23 @@
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-import { getFirestore, collection, getDocs, doc, getDoc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { 
+  getAuth, 
+  onAuthStateChanged, 
+  signOut 
+} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+
+import { 
+  getFirestore, 
+  collection, 
+  getDocs, 
+  doc, 
+  getDoc, 
+  setDoc, 
+  serverTimestamp 
+} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+/* ================= FIREBASE CONFIG ================= */
 
 const firebaseConfig = {
   apiKey: "AIzaSyDvnEkkbAw5iz0QQboqswsBb0It28G6xd0",
@@ -183,27 +198,37 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-/* AUTH CHECK */
+/* ================= ADMIN AUTH PROTECTION ================= */
+
 onAuthStateChanged(auth, async (user) => {
   if (!user) {
     window.location.href = "index.html";
     return;
   }
 
-  const userDoc = await getDoc(doc(db, "users", user.uid));
+  try {
+    const userRef = doc(db, "users", user.uid);
+    const userSnap = await getDoc(userRef);
 
-  if (!userDoc.exists() || userDoc.data().role !== "admin") {
-    alert("Access denied.");
+    if (!userSnap.exists() || userSnap.data().role !== "admin") {
+      alert("Access denied.");
+      window.location.href = "index.html";
+      return;
+    }
+
+    // Load data only if admin
+    await loadDashboard();
+    await loadCleaners();
+    await loadBookings();
+
+  } catch (error) {
+    console.error("Auth error:", error);
     window.location.href = "index.html";
-    return;
   }
-
-  loadDashboard();
-  loadCleaners();
-  loadBookings();
 });
 
-/* DASHBOARD */
+/* ================= DASHBOARD ================= */
+
 async function loadDashboard() {
   const snapshot = await getDocs(collection(db, "bookings"));
 
@@ -212,9 +237,10 @@ async function loadDashboard() {
   let completed = 0;
   let revenue = 0;
 
-  snapshot.forEach(doc => {
+  snapshot.forEach((doc) => {
     const data = doc.data();
     total++;
+
     if (data.status === "pending") pending++;
     if (data.status === "completed") {
       completed++;
@@ -222,21 +248,23 @@ async function loadDashboard() {
     }
   });
 
-  document.getElementById("totalBookings").innerText = total;
-  document.getElementById("pendingBookings").innerText = pending;
-  document.getElementById("completedBookings").innerText = completed;
-  document.getElementById("totalRevenue").innerText = "£" + revenue;
+  document.getElementById("totalBookings").textContent = total;
+  document.getElementById("pendingBookings").textContent = pending;
+  document.getElementById("completedBookings").textContent = completed;
+  document.getElementById("totalRevenue").textContent = "£" + revenue.toFixed(2);
 }
 
-/* LOAD CLEANERS */
+/* ================= LOAD CLEANERS ================= */
+
 async function loadCleaners() {
   const snapshot = await getDocs(collection(db, "cleaners"));
   const table = document.getElementById("cleanersTable");
   table.innerHTML = "";
 
-  snapshot.forEach(doc => {
+  snapshot.forEach((doc) => {
     const data = doc.data();
-    table.innerHTML += `
+
+    const row = `
       <tr>
         <td>${data.cleanerId}</td>
         <td>${data.name}</td>
@@ -244,55 +272,78 @@ async function loadCleaners() {
         <td>${data.active ? "Active" : "Inactive"}</td>
       </tr>
     `;
+
+    table.insertAdjacentHTML("beforeend", row);
   });
 }
 
-/* LOAD BOOKINGS */
+/* ================= LOAD BOOKINGS ================= */
+
 async function loadBookings() {
   const snapshot = await getDocs(collection(db, "bookings"));
   const table = document.getElementById("bookingsTable");
   table.innerHTML = "";
 
-  snapshot.forEach(doc => {
+  snapshot.forEach((doc) => {
     const data = doc.data();
-    table.innerHTML += `
+
+    const row = `
       <tr>
-        <td>${data.customerName || ""}</td>
-        <td>${data.service || ""}</td>
-        <td>${data.status || ""}</td>
-        <td>£${data.price || 0}</td>
+        <td>${data.customerName || "-"}</td>
+        <td>${data.service || "-"}</td>
+        <td>${data.status || "-"}</td>
+        <td>£${Number(data.price || 0).toFixed(2)}</td>
       </tr>
     `;
+
+    table.insertAdjacentHTML("beforeend", row);
   });
 }
 
-/* ADD CLEANER */
+/* ================= ADD CLEANER ================= */
+
 window.addCleaner = async function () {
-  const name = document.getElementById("cleanerName").value;
-  const phone = document.getElementById("cleanerPhone").value;
-  const pin = document.getElementById("cleanerPin").value;
+  const name = document.getElementById("cleanerName").value.trim();
+  const phone = document.getElementById("cleanerPhone").value.trim();
+  const pin = document.getElementById("cleanerPin").value.trim();
 
   if (!name || !phone || !pin) {
-    alert("Fill all fields");
+    alert("Please fill all fields.");
     return;
   }
 
-  const cleanerId = "C" + Math.floor(Math.random() * 10000);
+  if (pin.length !== 4 || isNaN(pin)) {
+    alert("PIN must be 4 digits.");
+    return;
+  }
 
-  await setDoc(doc(db, "cleaners", cleanerId), {
-    cleanerId,
-    name,
-    phone,
-    pin,
-    active: true,
-    createdAt: serverTimestamp()
-  });
+  const cleanerId = "C" + Date.now(); // better unique ID
 
-  alert("Cleaner added!");
-  loadCleaners();
+  try {
+    await setDoc(doc(db, "cleaners", cleanerId), {
+      cleanerId,
+      name,
+      phone,
+      pin,
+      active: true,
+      createdAt: serverTimestamp()
+    });
+
+    alert("Cleaner added successfully.");
+    document.getElementById("cleanerName").value = "";
+    document.getElementById("cleanerPhone").value = "";
+    document.getElementById("cleanerPin").value = "";
+
+    loadCleaners();
+
+  } catch (error) {
+    console.error("Error adding cleaner:", error);
+    alert("Failed to add cleaner.");
+  }
 };
 
-/* LOGOUT */
+/* ================= LOGOUT ================= */
+
 window.logout = function () {
   signOut(auth).then(() => {
     window.location.href = "index.html";
@@ -302,3 +353,4 @@ window.logout = function () {
 
 </body>
 </html>
+
