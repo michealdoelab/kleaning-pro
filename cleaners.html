@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>Book Cleaning - Kleaning Pro</title>
+<title>Cleaner Portal - Kleaning Pro</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <style>
@@ -15,85 +15,54 @@ header {
   font-size:22px;
 }
 .container {
-  max-width:700px;
+  max-width:800px;
   margin:40px auto;
   background:white;
   padding:30px;
   border-radius:10px;
   box-shadow:0 4px 12px rgba(0,0,0,0.1);
 }
-input, select {
-  width:100%;
+input {
   padding:10px;
   margin:10px 0;
-}
-.section-title {
-  margin-top:20px;
-  color:#2E7D32;
-}
-.extras label {
-  display:block;
-}
-.summary {
-  background:#E8F5E9;
-  padding:15px;
-  margin-top:20px;
-  font-weight:bold;
+  width:100%;
 }
 button {
-  width:100%;
-  padding:15px;
+  padding:10px 15px;
   background:#4CAF2A;
   color:white;
   border:none;
-  border-radius:8px;
-  margin-top:20px;
+  border-radius:6px;
   cursor:pointer;
 }
 button:hover { background:#2E7D32; }
+.job {
+  border:1px solid #ddd;
+  padding:15px;
+  margin-top:15px;
+  border-radius:8px;
+}
 </style>
 </head>
 
 <body>
 
-<header>Book a Cleaning Service</header>
+<header>Cleaner Portal</header>
 
 <div class="container">
 
-<h3 class="section-title">Customer Details</h3>
-<input id="name" placeholder="Full Name">
-<input id="phone" placeholder="Phone">
-<input id="address" placeholder="Address">
+<h3>Login</h3>
+<input id="cleanerId" placeholder="Cleaner ID">
+<input id="pin" placeholder="PIN">
+<button onclick="login()">Login</button>
 
-<h3 class="section-title">Cleaning Type</h3>
-<select id="type" onchange="updateOptions()">
-  <option value="">Select Type</option>
-  <option value="domestic">Domestic Cleaning</option>
-  <option value="commercial">Commercial Cleaning</option>
-</select>
-
-<select id="service" onchange="calculatePrice()"></select>
-
-<h3 class="section-title">Extras</h3>
-<div class="extras">
-  <label><input type="checkbox" value="20" onchange="calculatePrice()"> Inside Oven (£20)</label>
-  <label><input type="checkbox" value="15" onchange="calculatePrice()"> Fridge Cleaning (£15)</label>
-  <label><input type="checkbox" value="25" onchange="calculatePrice()"> Carpet Cleaning (£25)</label>
-</div>
-
-<input type="date" id="date">
-
-<div class="summary">
-Total: £<span id="total">0</span>
-</div>
-
-<button onclick="submitBooking()">Confirm Booking</button>
+<div id="jobs"></div>
 
 </div>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { getFirestore, collection, getDocs, query, where, updateDoc, doc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyDvnEkkbAw5iz0QQboqswsBb0It28G6xd0",
@@ -107,61 +76,59 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-window.updateOptions = function(){
-  const type = document.getElementById("type").value;
-  const service = document.getElementById("service");
-  service.innerHTML = "";
+let currentCleaner = null;
 
-  if(type==="domestic"){
-    service.innerHTML += `<option value="60">Standard Cleaning (£60)</option>`;
-    service.innerHTML += `<option value="100">Deep Cleaning (£100)</option>`;
-    service.innerHTML += `<option value="150">Move Out Cleaning (£150)</option>`;
-  }
+window.login = async function(){
+  const id = document.getElementById("cleanerId").value;
+  const pin = document.getElementById("pin").value;
 
-  if(type==="commercial"){
-    service.innerHTML += `<option value="200">Office Cleaning (£200)</option>`;
-    service.innerHTML += `<option value="300">School Cleaning (£300)</option>`;
-    service.innerHTML += `<option value="250">Retail Cleaning (£250)</option>`;
-  }
+  const snapshot = await getDocs(collection(db,"cleaners"));
+  let found = false;
 
-  calculatePrice();
-}
+  snapshot.forEach(docSnap=>{
+    const data = docSnap.data();
+    if(data.cleanerId===id && data.pin===pin){
+      currentCleaner = id;
+      found = true;
+    }
+  });
 
-window.calculatePrice = function(){
-  let total = Number(document.getElementById("service").value || 0);
-
-  document.querySelectorAll(".extras input:checked")
-    .forEach(cb => total += Number(cb.value));
-
-  document.getElementById("total").innerText = total;
-}
-
-window.submitBooking = async function(){
-  const name = document.getElementById("name").value;
-  const phone = document.getElementById("phone").value;
-  const address = document.getElementById("address").value;
-  const type = document.getElementById("type").value;
-  const serviceText = document.getElementById("service").options[
-    document.getElementById("service").selectedIndex].text;
-  const total = document.getElementById("total").innerText;
-  const date = document.getElementById("date").value;
-
-  if(!name || !phone || !address || !type || !date){
-    alert("Fill all fields");
+  if(!found){
+    alert("Invalid login");
     return;
   }
 
-  await addDoc(collection(db,"bookings"),{
-    name, phone, address, type,
-    service: serviceText,
-    total: Number(total),
-    status:"pending",
-    date,
-    createdAt: serverTimestamp()
-  });
+  loadJobs();
+}
 
-  alert("Booking Submitted!");
-  location.reload();
+async function loadJobs(){
+  const q = query(collection(db,"bookings"), where("assignedCleaner","==",currentCleaner));
+  const snapshot = await getDocs(q);
+
+  const jobsDiv = document.getElementById("jobs");
+  jobsDiv.innerHTML = "<h3>Assigned Jobs</h3>";
+
+  snapshot.forEach(docSnap=>{
+    const data = docSnap.data();
+
+    jobsDiv.innerHTML += `
+      <div class="job">
+        <p><b>${data.service}</b></p>
+        <p>${data.address}</p>
+        <p>Date: ${data.date}</p>
+        <p>Status: ${data.status}</p>
+        <button onclick="completeJob('${docSnap.id}')">Mark Completed</button>
+      </div>
+    `;
+  });
+}
+
+window.completeJob = async function(id){
+  await updateDoc(doc(db,"bookings",id),{
+    status:"completed"
+  });
+  alert("Job completed");
+  loadJobs();
 }
 </script>
 
