@@ -1,107 +1,91 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <meta charset="UTF-8">
-  <title>Kleaning Pro</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="UTF-8">
+<title>Kleaning Pro</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <style>
-    body {
-      margin: 0;
-      font-family: Arial, sans-serif;
-      background: #F4F7F2;
-      display: flex;
-      flex-direction: column;
-      min-height: 100vh;
-    }
-
-    header {
-      background: #4CAF2A;
-      color: white;
-      padding: 20px;
-      text-align: center;
-      font-size: 24px;
-      font-weight: bold;
-    }
-
-    .hero {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
-      text-align: center;
-      padding: 20px;
-    }
-
-    .hero h1 {
-      margin-bottom: 10px;
-      color: #2E7D32;
-    }
-
-    .hero p {
-      margin-bottom: 30px;
-      color: #555;
-    }
-
-    .buttons {
-      display: flex;
-      gap: 20px;
-      flex-wrap: wrap;
-      justify-content: center;
-    }
-
-    .btn {
-      padding: 15px 30px;
-      font-size: 16px;
-      border: none;
-      border-radius: 8px;
-      cursor: pointer;
-      background: #4CAF2A;
-      color: white;
-      transition: 0.3s;
-      min-width: 150px;
-    }
-
-    .btn:hover {
-      background: #2E7D32;
-    }
-
-    footer {
-      text-align: center;
-      padding: 15px;
-      background: #eee;
-      font-size: 14px;
-    }
-  </style>
+<style>
+body { margin:0; font-family:Arial; background:#f4f7f2; }
+header {
+  background:#4CAF2A;
+  padding:20px;
+  text-align:center;
+  color:white;
+  font-size:24px;
+  font-weight:bold;
+}
+.hero {
+  text-align:center;
+  padding:80px 20px;
+}
+.hero h1 {
+  font-size:40px;
+  color:#2E7D32;
+}
+.hero p {
+  color:#555;
+  font-size:18px;
+}
+.buttons {
+  margin-top:40px;
+}
+.btn {
+  background:#4CAF2A;
+  color:white;
+  padding:15px 30px;
+  border:none;
+  border-radius:8px;
+  margin:10px;
+  cursor:pointer;
+  font-size:16px;
+}
+.btn:hover { background:#2E7D32; }
+.features {
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(250px,1fr));
+  gap:20px;
+  padding:40px;
+}
+.card {
+  background:white;
+  padding:25px;
+  border-radius:10px;
+  box-shadow:0 4px 12px rgba(0,0,0,0.1);
+}
+.card h3 { color:#2E7D32; }
+</style>
 </head>
 
 <body>
 
-<header>
-  Kleaning Pro
-</header>
+<header>Kleaning Pro</header>
 
 <div class="hero">
-  <h1>Welcome to Kleaning Pro</h1>
-  <p>Professional Cleaning Services Management System</p>
+  <h1>Professional Commercial & Domestic Cleaning</h1>
+  <p>Reliable. Insured. Fully Managed Cleaning Solutions.</p>
 
   <div class="buttons">
-    <button class="btn" onclick="goTo('admin.html')">Admin</button>
-    <button class="btn" onclick="goTo('customer.html')">Customer</button>
-    <button class="btn" onclick="goTo('cleaner.html')">Cleaner</button>
+    <button class="btn" onclick="location.href='customer.html'">Customer</button>
+    <button class="btn" onclick="location.href='cleaners.html'">Cleaner</button>
+    <button class="btn" onclick="location.href='admin.html'">Admin</button>
   </div>
 </div>
 
-<footer>
-  © 2026 Kleaning Pro. All rights reserved.
-</footer>
-
-<script>
-  function goTo(page) {
-    window.location.href = page;
-  }
-</script>
+<div class="features">
+  <div class="card">
+    <h3>Commercial Cleaning</h3>
+    <p>Offices, Schools, Retail, Warehouses, Medical & More.</p>
+  </div>
+  <div class="card">
+    <h3>Domestic Cleaning</h3>
+    <p>Regular, Deep, Move-Out & End of Tenancy Services.</p>
+  </div>
+  <div class="card">
+    <h3>Fully Managed</h3>
+    <p>Admin dashboard, cleaner tracking & job control.</p>
+  </div>
+</div>
 
 </body>
 </html>
