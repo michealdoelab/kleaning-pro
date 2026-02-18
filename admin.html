@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Admin Dashboard - Kleaning Pro</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #F4F7F2;
+    }
+
+    header {
+      background: #4CAF2A;
+      color: white;
+      padding: 20px;
+      font-size: 22px;
+      font-weight: bold;
+      position: relative;
+    }
+
+    .logout-btn {
+      position: absolute;
+      right: 20px;
+      top: 20px;
+      background: white;
+      color: #4CAF2A;
+      border: none;
+      padding: 8px 12px;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+
+    .container {
+      padding: 20px;
+    }
+
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 20px;
+      margin-bottom: 30px;
+    }
+
+    .card {
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+
+    .card h3 {
+      margin: 0;
+      color: #2E7D32;
+    }
+
+    .section {
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+      margin-bottom: 30px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+
+    input {
+      padding: 8px;
+      margin: 5px 0;
+      width: 100%;
+    }
+
+    button {
+      padding: 10px;
+      background: #4CAF2A;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      margin-top: 5px;
+    }
+
+    button:hover {
+      background: #2E7D32;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    th, td {
+      padding: 10px;
+      border-bottom: 1px solid #ddd;
+      text-align: left;
+    }
+  </style>
+</head>
+
+<body>
+
+<header>
+  Admin Dashboard - Kleaning Pro
+  <button class="logout-btn" onclick="logout()">Logout</button>
+</header>
+
+<div class="container">
+
+  <div class="cards">
+    <div class="card">
+      <h3 id="totalBookings">0</h3>
+      Total Bookings
+    </div>
+    <div class="card">
+      <h3 id="pendingBookings">0</h3>
+      Pending
+    </div>
+    <div class="card">
+      <h3 id="completedBookings">0</h3>
+      Completed
+    </div>
+    <div class="card">
+      <h3 id="totalRevenue">£0</h3>
+      Revenue
+    </div>
+  </div>
+
+  <div class="section">
+    <h2>Add Cleaner</h2>
+    <input type="text" id="cleanerName" placeholder="Cleaner Name">
+    <input type="text" id="cleanerPhone" placeholder="Phone">
+    <input type="text" id="cleanerPin" placeholder="4-digit PIN">
+    <button onclick="addCleaner()">Create Cleaner</button>
+  </div>
+
+  <div class="section">
+    <h2>Cleaners</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Name</th>
+          <th>Phone</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody id="cleanersTable"></tbody>
+    </table>
+  </div>
+
+  <div class="section">
+    <h2>Bookings</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Customer</th>
+          <th>Service</th>
+          <th>Status</th>
+          <th>Price</th>
+        </tr>
+      </thead>
+      <tbody id="bookingsTable"></tbody>
+    </table>
+  </div>
+
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+import { getFirestore, collection, getDocs, doc, getDoc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyDvnEkkbAw5iz0QQboqswsBb0It28G6xd0",
+  authDomain: "kleaning-pro.firebaseapp.com",
+  projectId: "kleaning-pro",
+  storageBucket: "kleaning-pro.firebasestorage.app",
+  messagingSenderId: "27999980404",
+  appId: "1:27999980404:web:bbb5c57fa20a7f5ea07a21"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+
+/* AUTH CHECK */
+onAuthStateChanged(auth, async (user) => {
+  if (!user) {
+    window.location.href = "index.html";
+    return;
+  }
+
+  const userDoc = await getDoc(doc(db, "users", user.uid));
+
+  if (!userDoc.exists() || userDoc.data().role !== "admin") {
+    alert("Access denied.");
+    window.location.href = "index.html";
+    return;
+  }
+
+  loadDashboard();
+  loadCleaners();
+  loadBookings();
+});
+
+/* DASHBOARD */
+async function loadDashboard() {
+  const snapshot = await getDocs(collection(db, "bookings"));
+
+  let total = 0;
+  let pending = 0;
+  let completed = 0;
+  let revenue = 0;
+
+  snapshot.forEach(doc => {
+    const data = doc.data();
+    total++;
+    if (data.status === "pending") pending++;
+    if (data.status === "completed") {
+      completed++;
+      revenue += Number(data.price || 0);
+    }
+  });
+
+  document.getElementById("totalBookings").innerText = total;
+  document.getElementById("pendingBookings").innerText = pending;
+  document.getElementById("completedBookings").innerText = completed;
+  document.getElementById("totalRevenue").innerText = "£" + revenue;
+}
+
+/* LOAD CLEANERS */
+async function loadCleaners() {
+  const snapshot = await getDocs(collection(db, "cleaners"));
+  const table = document.getElementById("cleanersTable");
+  table.innerHTML = "";
+
+  snapshot.forEach(doc => {
+    const data = doc.data();
+    table.innerHTML += `
+      <tr>
+        <td>${data.cleanerId}</td>
+        <td>${data.name}</td>
+        <td>${data.phone}</td>
+        <td>${data.active ? "Active" : "Inactive"}</td>
+      </tr>
+    `;
+  });
+}
+
+/* LOAD BOOKINGS */
+async function loadBookings() {
+  const snapshot = await getDocs(collection(db, "bookings"));
+  const table = document.getElementById("bookingsTable");
+  table.innerHTML = "";
+
+  snapshot.forEach(doc => {
+    const data = doc.data();
+    table.innerHTML += `
+      <tr>
+        <td>${data.customerName || ""}</td>
+        <td>${data.service || ""}</td>
+        <td>${data.status || ""}</td>
+        <td>£${data.price || 0}</td>
+      </tr>
+    `;
+  });
+}
+
+/* ADD CLEANER */
+window.addCleaner = async function () {
+  const name = document.getElementById("cleanerName").value;
+  const phone = document.getElementById("cleanerPhone").value;
+  const pin = document.getElementById("cleanerPin").value;
+
+  if (!name || !phone || !pin) {
+    alert("Fill all fields");
+    return;
+  }
+
+  const cleanerId = "C" + Math.floor(Math.random() * 10000);
+
+  await setDoc(doc(db, "cleaners", cleanerId), {
+    cleanerId,
+    name,
+    phone,
+    pin,
+    active: true,
+    createdAt: serverTimestamp()
+  });
+
+  alert("Cleaner added!");
+  loadCleaners();
+};
+
+/* LOGOUT */
+window.logout = function () {
+  signOut(auth).then(() => {
+    window.location.href = "index.html";
+  });
+};
+</script>
+
+</body>
+</html>
