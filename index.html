@@ -1,252 +1,107 @@
 <!DOCTYPE html>
 <html>
 <head>
-<meta charset="UTF-8">
-<title>Kleaning Pro</title>
+  <meta charset="UTF-8">
+  <title>Kleaning Pro</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #F4F7F2;
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
 
-<style>
-*{
-  margin:0;
-  padding:0;
-  box-sizing:border-box;
-  font-family:Segoe UI, sans-serif;
-}
+    header {
+      background: #4CAF2A;
+      color: white;
+      padding: 20px;
+      text-align: center;
+      font-size: 24px;
+      font-weight: bold;
+    }
 
-body{
-  background:#0f1f1c;
-  color:#e6f2ef;
-  padding:30px;
-}
+    .hero {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      padding: 20px;
+    }
 
-.container{
-  max-width:1000px;
-  margin:auto;
-}
+    .hero h1 {
+      margin-bottom: 10px;
+      color: #2E7D32;
+    }
 
-.card{
-  background:#123c2f;
-  padding:20px;
-  border-radius:12px;
-  margin-bottom:20px;
-  box-shadow:0 5px 20px rgba(0,0,0,0.3);
-}
+    .hero p {
+      margin-bottom: 30px;
+      color: #555;
+    }
 
-input,select,button{
-  width:100%;
-  padding:10px;
-  margin-top:10px;
-  border-radius:8px;
-  border:none;
-}
+    .buttons {
+      display: flex;
+      gap: 20px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
 
-button{
-  background:#14532d;
-  color:white;
-  cursor:pointer;
-}
+    .btn {
+      padding: 15px 30px;
+      font-size: 16px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      background: #4CAF2A;
+      color: white;
+      transition: 0.3s;
+      min-width: 150px;
+    }
 
-button:hover{
-  background:#1f7a4d;
-}
+    .btn:hover {
+      background: #2E7D32;
+    }
 
-.logout{
-  background:#dc2626;
-}
-
-.flex{
-  display:flex;
-  gap:20px;
-}
-
-.left,.right{
-  flex:1;
-}
-</style>
+    footer {
+      text-align: center;
+      padding: 15px;
+      background: #eee;
+      font-size: 14px;
+    }
+  </style>
 </head>
 
 <body>
 
-<div class="container">
+<header>
+  Kleaning Pro
+</header>
 
-<div id="authSection" class="card">
+<div class="hero">
+  <h1>Welcome to Kleaning Pro</h1>
+  <p>Professional Cleaning Services Management System</p>
 
-<h2>Customer Portal</h2>
-
-<h3>Register</h3>
-<input id="regName" placeholder="Full Name">
-<input id="regEmail" placeholder="Email">
-<input id="regPassword" type="password" placeholder="Password">
-<input id="regPhone" placeholder="Phone">
-<input id="regPostcode" placeholder="Post Code">
-<input id="regAddress" placeholder="Address">
-<button onclick="register()">Register</button>
-
-<hr style="margin:20px 0">
-
-<h3>Login</h3>
-<input id="loginEmail" placeholder="Email">
-<input id="loginPassword" type="password" placeholder="Password">
-<button onclick="login()">Login</button>
-
+  <div class="buttons">
+    <button class="btn" onclick="goTo('admin.html')">Admin</button>
+    <button class="btn" onclick="goTo('customer.html')">Customer</button>
+    <button class="btn" onclick="goTo('cleaner.html')">Cleaner</button>
+  </div>
 </div>
 
+<footer>
+  © 2026 Kleaning Pro. All rights reserved.
+</footer>
 
-<div id="dashboard" style="display:none;">
-
-<div class="card">
-<h2>Customer Dashboard</h2>
-<button class="logout" onclick="logout()">Logout</button>
-</div>
-
-<div class="flex">
-
-<div class="left">
-
-<div class="card">
-<h3>Profile</h3>
-<div id="profileInfo"></div>
-</div>
-
-<div class="card">
-<h3>Create Booking</h3>
-
-<select id="service">
-<option value="Moping">Moping</option>
-<option value="Deep Cleaning">Deep Cleaning</option>
-</select>
-
-<input id="dateTime" placeholder="Select Date & Time">
-
-<input id="customerComment" placeholder="Comment (optional)">
-<button onclick="createBooking()">Book Now</button>
-
-</div>
-
-</div>
-
-<div class="right">
-
-<div class="card">
-<h3>My Bookings</h3>
-<div id="myBookings"></div>
-</div>
-
-</div>
-
-</div>
-</div>
-
-<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
-
-<script type="module">
-
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged }
-from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-import { getFirestore, doc, setDoc, getDoc, addDoc, collection, query, where, onSnapshot }
-from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
-
-const firebaseConfig = {
-  apiKey: "AIzaSyDvnEkkbAw5iz0QQboqswsBb0It28G6xd0",
-  authDomain: "kleaning-pro.firebaseapp.com",
-  projectId: "kleaning-pro",
-  storageBucket: "kleaning-pro.firebasestorage.app",
-  messagingSenderId: "27999980404",
-  appId: "1:27999980404:web:bbb5c57fa20a7f5ea07a21"
-};
-
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db = getFirestore(app);
-
-let currentUserId=null;
-
-flatpickr("#dateTime",{enableTime:true,dateFormat:"Y-m-d H:i",minDate:"today"});
-
-onAuthStateChanged(auth, async user=>{
-  if(user){
-    const snap = await getDoc(doc(db,"users",user.uid));
-    const data = snap.data();
-
-    if(data.role === "admin"){
-      window.location.href="admin.html";
-      return;
-    }
-
-    currentUserId=user.uid;
-    authSection.style.display="none";
-    dashboard.style.display="block";
-    loadProfile();
-    loadBookings();
-  }else{
-    authSection.style.display="block";
-    dashboard.style.display="none";
+<script>
+  function goTo(page) {
+    window.location.href = page;
   }
-});
-
-window.register=async()=>{
-  const cred=await createUserWithEmailAndPassword(auth,regEmail.value,regPassword.value);
-
-  await setDoc(doc(db,"users",cred.user.uid),{
-    name:regName.value,
-    email:regEmail.value,
-    phone:regPhone.value,
-    postcode:regPostcode.value,
-    address:regAddress.value,
-    role:"customer"
-  });
-
-  alert("Registered!");
-};
-
-window.login=async()=>{
-  await signInWithEmailAndPassword(auth,loginEmail.value,loginPassword.value);
-};
-
-window.logout=async()=>{ await signOut(auth); };
-
-async function loadProfile(){
-  const snap=await getDoc(doc(db,"users",currentUserId));
-  const u=snap.data();
-
-  profileInfo.innerHTML=`
-  <b>Name:</b> ${u.name}<br>
-  <b>Email:</b> ${u.email}<br>
-  <b>Phone:</b> ${u.phone}<br>
-  <b>Address:</b> ${u.address}
-  `;
-}
-
-window.createBooking=async()=>{
-  await addDoc(collection(db,"bookings"),{
-    userId:currentUserId,
-    service:service.value,
-    dateTime:dateTime.value,
-    customerComment:customerComment.value || "",
-    status:"pending",
-    createdAt:new Date()
-  });
-};
-
-function loadBookings(){
-  const q=query(collection(db,"bookings"),where("userId","==",currentUserId));
-  onSnapshot(q,snap=>{
-    myBookings.innerHTML="";
-    snap.forEach(d=>{
-      const b=d.data();
-      myBookings.innerHTML+=`
-      <div class="card">
-        <b>${b.service}</b><br>
-        ${b.dateTime}<br>
-        Status: ${b.status}<br>
-        ${b.customerComment || ""}
-      </div>`;
-    });
-  });
-}
-
 </script>
+
 </body>
 </html>
