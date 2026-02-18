@@ -1,1 +1,176 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Customer Booking - Kleaning Pro</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #F4F7F2;
+    }
+
+    header {
+      background: #4CAF2A;
+      color: white;
+      padding: 20px;
+      text-align: center;
+      font-size: 22px;
+      font-weight: bold;
+    }
+
+    .container {
+      max-width: 500px;
+      margin: 40px auto;
+      background: white;
+      padding: 25px;
+      border-radius: 10px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+
+    h2 {
+      text-align: center;
+      color: #2E7D32;
+    }
+
+    input, select {
+      width: 100%;
+      padding: 10px;
+      margin: 10px 0;
+    }
+
+    button {
+      width: 100%;
+      padding: 12px;
+      background: #4CAF2A;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background: #2E7D32;
+    }
+
+    .price-box {
+      background: #E8F5E9;
+      padding: 10px;
+      margin: 10px 0;
+      text-align: center;
+      font-weight: bold;
+      color: #2E7D32;
+    }
+
+    .back {
+      text-align: center;
+      margin-top: 15px;
+    }
+
+    .back a {
+      color: #4CAF2A;
+      text-decoration: none;
+    }
+  </style>
+</head>
+
+<body>
+
+<header>
+  Customer Booking - Kleaning Pro
+</header>
+
+<div class="container">
+  <h2>Book a Cleaning</h2>
+
+  <input type="text" id="name" placeholder="Full Name">
+  <input type="text" id="phone" placeholder="Phone Number">
+  <input type="text" id="address" placeholder="Address">
+
+  <select id="service" onchange="updatePrice()">
+    <option value="">Select Service</option>
+    <option value="50">Standard Cleaning (£50)</option>
+    <option value="80">Deep Cleaning (£80)</option>
+    <option value="120">Move-Out Cleaning (£120)</option>
+  </select>
+
+  <input type="date" id="date">
+
+  <div class="price-box">
+    Total: £<span id="price">0</span>
+  </div>
+
+  <button onclick="bookService()">Book Now</button>
+
+  <div class="back">
+    <a href="index.html">← Back to Home</a>
+  </div>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyDvnEkkbAw5iz0QQboqswsBb0It28G6xd0",
+  authDomain: "kleaning-pro.firebaseapp.com",
+  projectId: "kleaning-pro",
+  storageBucket: "kleaning-pro.firebasestorage.app",
+  messagingSenderId: "27999980404",
+  appId: "1:27999980404:web:bbb5c57fa20a7f5ea07a21"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+window.updatePrice = function () {
+  const service = document.getElementById("service").value;
+  document.getElementById("price").textContent = service || 0;
+};
+
+window.bookService = async function () {
+  const name = document.getElementById("name").value.trim();
+  const phone = document.getElementById("phone").value.trim();
+  const address = document.getElementById("address").value.trim();
+  const servicePrice = document.getElementById("service").value;
+  const date = document.getElementById("date").value;
+
+  if (!name || !phone || !address || !servicePrice || !date) {
+    alert("Please fill all fields.");
+    return;
+  }
+
+  try {
+    await addDoc(collection(db, "bookings"), {
+      customerName: name,
+      phone,
+      address,
+      service: document.getElementById("service").options[
+        document.getElementById("service").selectedIndex
+      ].text,
+      price: Number(servicePrice),
+      date,
+      status: "pending",
+      createdAt: serverTimestamp()
+    });
+
+    alert("Booking submitted successfully!");
+
+    document.getElementById("name").value = "";
+    document.getElementById("phone").value = "";
+    document.getElementById("address").value = "";
+    document.getElementById("service").value = "";
+    document.getElementById("date").value = "";
+    document.getElementById("price").textContent = 0;
+
+  } catch (error) {
+    alert("Error submitting booking.");
+    console.error(error);
+  }
+};
+</script>
+
+</body>
+</html>
